@@ -11,12 +11,11 @@ int main() {
 	InterceptionKeyStroke stroke;
 	wchar_t hardware_id[500];
 	WSADATA wsaData;
-	int server_port = 55554;
 	WSAStartup(0x0202, &wsaData);
 	struct sockaddr_in serverAddr;
 	serverAddr.sin_family = AF_INET;
 	InetPton(AF_INET, L"127.0.0.1", &serverAddr.sin_addr.s_addr);
-	serverAddr.sin_port = htons((u_short)server_port);
+	serverAddr.sin_port = htons(55554);
 	int clientSock = socket(PF_INET, SOCK_DGRAM, 0);
 	raise_process_priority();
 	context = interception_create_context();
