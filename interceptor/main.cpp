@@ -69,10 +69,10 @@ int main() {
 	WSADATA wsaData;										
 	WSAStartup(0x0202, &wsaData);										
 	struct sockaddr_in serverAddr;										
-	serverAddr.sin_family = AF_INET;									// Define that this socketaddr is IPv4
+	serverAddr.sin_family = AF_INET;					// Define that this socketaddr is IPv4
 	InetPton(AF_INET, localhost.c_str(), &serverAddr.sin_addr.s_addr);	// Set the socketaddr IP address, in this case 127.0.0.1 (localhost)
-	serverAddr.sin_port = htons(55555);									// Set the socketaddr port
-	int clientSock = socket(PF_INET, SOCK_DGRAM, 0);					// Finally create the socket
+	serverAddr.sin_port = htons(55555);					// Set the socketaddr port
+	int clientSock = socket(PF_INET, SOCK_DGRAM, 0);			// Finally create the socket
 	// Open an async thread to listen for things from Soundboard, while still letting this run normally
 	std::async(std::launch::async, closeProgram, localhost);
 
