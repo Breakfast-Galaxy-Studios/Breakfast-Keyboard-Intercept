@@ -3,9 +3,8 @@
 #include <iostream>
 #include <main.h>
 #include <thread>
-#include <WinSock2.h>
-#include <Windows.h>
 #include <future>
+#include <WinSock2.h>
 #include <Ws2tcpip.h>
 #include <Poco/Util/PropertyFileConfiguration.h>
 #pragma comment(lib, "Ws2_32.lib")
@@ -37,20 +36,28 @@ int getDevID() {
 	return config->getInt("devID");
 }
 
-// Uses tdp to listen for things on port localhost::55556
 // If it gets anything it closes the program
-bool closeProgram(std::string localhost) {
+bool closeProgram(std::string localhost, int clientSock, InterceptionContext context) {
 	// Socket is defined same was as in main, just with a different port
 	struct sockaddr_in recieveAddr;
 	recieveAddr.sin_family = AF_INET;
 	InetPton(AF_INET, localhost.c_str(), &recieveAddr.sin_addr.s_addr);
-	recieveAddr.sin_port = htons(55556);
+	recieveAddr.sin_port = htons(58585);
 	int serverAddrSize = sizeof(recieveAddr);
-	SOCKET socketfd = socket(AF_INET, SOCK_STREAM, 0);
-	bind(socketfd, (struct sockaddr*)&recieveAddr, sizeof(recieveAddr)); // Bind the new socket to the specified port & address
-	listen(socketfd, 20); // Tell the os that we are listening on this port
-	accept(socketfd, NULL, NULL); // If any data is on the port, continue this function. accept() is a blocking function
-	exit(100); // Close the program, with exit code 100 to specify it was closed via tcp
+	int socketfd = socket(AF_INET, SOCK_STREAM, 0);
+	int result = bind(socketfd, (struct sockaddr*)&recieveAddr, serverAddrSize); // Bind the new socket to the specified port & address
+	if (result == SOCKET_ERROR) {
+		printf("bind failed with error: %d\n", WSAGetLastError());
+		closesocket(socketfd);
+		WSACleanup();
+		return 1;
+	}
+	listen(socketfd, 20);											// Tell the os that we are listening on this port
+	accept(socketfd, NULL, NULL);									// If any data is on the port, continue this function. accept() is a blocking function+
+	closesocket(socketfd);
+	closesocket(clientSock);
+	WSACleanup();
+	exit(100);														// Close the program, with exit code 100 to specify it was closed via tcp
 }
 
 int main() {
@@ -59,7 +66,6 @@ int main() {
 	InterceptionContext context;
 	InterceptionDevice device;
 	InterceptionKeyStroke stroke, lastStroke;
-	short int timesPressed = 0;
 	wchar_t hardware_id[500];
 	// E0 form of lshift, certain keys use this
 	InterceptionKeyStroke lshiftE0 = { 42, INTERCEPTION_KEY_E0 };
@@ -69,12 +75,12 @@ int main() {
 	WSADATA wsaData;										
 	WSAStartup(0x0202, &wsaData);										
 	struct sockaddr_in serverAddr;										
-	serverAddr.sin_family = AF_INET;					// Define that this socketaddr is IPv4
+	serverAddr.sin_family = AF_INET;									// Define that this socketaddr is IPv4
 	InetPton(AF_INET, localhost.c_str(), &serverAddr.sin_addr.s_addr);	// Set the socketaddr IP address, in this case 127.0.0.1 (localhost)
-	serverAddr.sin_port = htons(55555);					// Set the socketaddr port
-	int clientSock = socket(PF_INET, SOCK_DGRAM, 0);			// Finally create the socket
+	serverAddr.sin_port = htons(55555);									// Set the socketaddr port
+	int clientSock = socket(PF_INET, SOCK_DGRAM, 0);					// Finally create the socket
 	// Open an async thread to listen for things from Soundboard, while still letting this run normally
-	std::async(std::launch::async, closeProgram, localhost);
+	auto f = std::async(std::launch::async, closeProgram, localhost, clientSock, context);
 
 	// Things needed to actually listen for the keystrokes
 	raise_process_priority();
@@ -116,7 +122,7 @@ int main() {
 			// Monitor "last" keystroke, mainly used to see if E0 lshift is pressed.
 			lastStroke = stroke;
 		}
-		else if (deviceID != secondDevice) {
+		else {
 			// Send normal keystrokes for other devices.
 			interception_send(context, device, (InterceptionStroke*)&stroke, 1);
 		}
