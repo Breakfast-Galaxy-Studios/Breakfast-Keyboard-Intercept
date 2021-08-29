@@ -2,8 +2,13 @@
 #include <main.h>
 using namespace std;
 
+/**
+* Used to add 100 to middle keys if numlock is on.
+*/
 int newCode(int code) {
 	switch (code) {
+		case 55:
+		case 69:
 		case 82:
 		case 71: 
 		case 73:
@@ -14,12 +19,78 @@ int newCode(int code) {
 		case 75:
 		case 80:
 		case 77:
-			return code + 100;
+			return (code + 100);
 		default: return code;
 	}
 }
 
-string returnKeycode(int code) {
+// This returns an int to be sent over UDP
+/**
+* Returns the int to be sent over UDP to soundboard. 
+* Most keys used standarized scancodes that can be translated back in java, but java
+* uses a few differenct codes, mostly for E0 keys.
+* The hook we are using in java also doesn't normally separate numpad numbers and normal numbers
+* so we made our own codes for that.
+*/
+int returnKeyInt(int code) {
+	switch (code) {
+		// All of these are "action keys" in java (minus scroll lock)
+		case 91: return 3675;
+		case 93: return 3677;
+		case 155: return 3639;
+		case 170: return 70;
+		case 169: return 3653;
+		case 182: return 3666;
+		case 171: return 3655;
+		case 173: return 3657;
+		case 183: return 3667;
+		case 179: return 3663;
+		case 181: return 3665;
+		case 172: return 57416;
+		case 175: return 57419;
+		case 180: return 57424;
+		case 177: return 57421;
+
+		// f13-f24 are shifted f1-f12
+		case 159: return 91;
+		case 160: return 92;
+		case 161: return 93;
+		case 162: return 99;
+		case 163: return 100;
+		case 164: return 101;
+		case 165: return 102;
+		case 166: return 103;
+		case 167: return 104;
+		case 168: return 105;
+		case 187: return 106;
+		case 188: return 107;
+
+		// Numpad keys need special code in java
+		case 76: 
+		case 74: 
+		case 78: 
+		case 55:
+		case 82: 
+		case 71: 
+		case 73: 
+		case 83: 
+		case 79: 
+		case 81: 
+		case 72: 
+		case 75: 
+		case 80: 
+		case 77: 
+			return (code + 1000);
+		// All other keys return their normal scancodes for java
+		default: return code;
+	}
+}
+
+// This function is depricated and only used for debugging purposes, this shouldn't be called or refrenced in final release
+/**
+* Returns the string representation of the keycode.
+*/
+string returnKeyString(int code) {
 	switch (code){
 		// Function Keys
 		case 1: return "esc";
@@ -104,21 +175,6 @@ string returnKeycode(int code) {
 		case 91: return "meta";
 		case 93: return "context";
 
-		// Center of kb (ins, home, pause, del, prtsc, pause, arrows, etc.)
-		case 155: return "prtsc";
-		case 170: return "scroll";
-		case 169: return "pause";
-		case 182: return "ins";
-		case 171: return "home";
-		case 173: return "pgup";
-		case 183: return "del";
-		case 179: return "end";
-		case 181: return "pgdown";
-		case 172: return "up";
-		case 175: return "left";
-		case 180: return "down";
-		case 177: return "right";
-
 		// Numpad
 		case 76: return "num5";
 		case 74: return "num-";
@@ -137,8 +193,37 @@ string returnKeycode(int code) {
 		case 80: return "num2";
 		case 77: return "num6";
 
-		// f13-f24 are shifted f1-f12
+		// Center of kb (ins, home, pause, del, prtsc, pause, arrows, etc.)
+		// When numlock is on, these act as shifted versions of themselves
+		case 155: return "prtsc";
+		case 170: return "scroll";
+		case 169: return "pause";
+		case 182: return "ins";
+		case 171: return "home";
+		case 173: return "pgup";
+		case 183: return "del";
+		case 179: return "end";
+		case 181: return "pgdown";
+		case 172: return "up";
+		case 175: return "left";
+		case 180: return "down";
+		case 177: return "right";
 
+		
+
+		// f13-f24 are shifted f1-f12
+		case 159: return "F13";
+		case 160: return "F14";
+		case 161: return "F15";
+		case 162: return "F16";
+		case 163: return "F17";
+		case 164: return "F18";
+		case 165: return "F19";
+		case 166: return "F20";
+		case 167: return "F21";
+		case 168: return "F22";
+		case 187: return "F23";
+		case 188: return "F24";
 
 		// All undefined or non working keys
 	 	default: return "undefined";
